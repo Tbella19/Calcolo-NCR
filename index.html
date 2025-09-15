@@ -1,1 +1,501 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestore Reintegri Cassa NCR</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <base target="_top">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .input-field {
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+            transition-duration: 200ms;
+        }
+
+        .input-field:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+            border-color: #3b82f6;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-4 flex flex-col items-center">
+
+<!-- Header -->
+<div class="bg-white p-6 rounded-3xl shadow-lg w-full max-w-lg mb-6 text-center">
+    <h1 class="text-3xl font-bold text-gray-800 mb-2">Gestore Reintegri Cassa</h1>
+    <p class="text-gray-600">Inserisci i dati per calcolare i reintegri.</p>
+</div>
+
+<!-- Numero Cassa & Azioni -->
+<div class="bg-white p-6 rounded-3xl shadow-lg w-full max-w-lg mb-6">
+    <div class="mb-4">
+        <label for="cashier-number" class="block text-gray-700 font-semibold mb-2">Numero Cassa</label>
+        <div class="flex items-center space-x-4">
+            <input type="number" id="cashier-number" placeholder="Inserisci il numero"
+                   class="flex-grow p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200">
+            <button id="save-button" disabled
+                    class="px-6 py-3 bg-gray-400 text-white font-bold rounded-lg shadow-md transition-colors duration-200">
+                Salva Reintegro
+            </button>
+        </div>
+    </div>
+
+    <!-- Acquisizione Immagine -->
+    <div class="bg-blue-50 p-4 rounded-xl flex flex-col items-center">
+        <p class="text-blue-800 font-semibold mb-4">Acquisizione Dati da Immagine</p>
+        <p id="api-status" class="text-sm text-red-500 mb-2"></p>
+        <div class="flex space-x-4">
+            <button id="upload-photo-btn"
+                    class="px-6 py-3 bg-blue-600 text-white font-bold rounded-lg shadow-md cursor-pointer hover:bg-blue-700 transition-colors duration-200 flex items-center justify-center space-x-2">
+                <span>⬆️</span>
+                <span>Carica Foto</span>
+            </button>
+            <button id="capture-photo-btn"
+                    class="px-6 py-3 bg-blue-600 text-white font-bold rounded-lg shadow-md cursor-pointer hover:bg-blue-700 transition-colors duration-200 flex items-center justify-center space-x-2">
+                <span>📸</span>
+                <span>Scatta Foto</span>
+            </button>
+        </div>
+        <p id="loading-status" class="mt-4 text-sm text-gray-500 hidden">Analisi in corso...</p>
+    </div>
+</div>
+
+<!-- Campi di Inserimento -->
+<div class="bg-white p-6 rounded-3xl shadow-lg w-full max-w-lg mb-6">
+    <h2 class="text-2xl font-semibold text-gray-800 mb-4">Quantità in Cassa</h2>
+    <div class="grid grid-cols-2 gap-4">
+        <!-- Monete -->
+        <div class="col-span-1">
+            <h3 class="font-bold text-gray-700 mb-2">Monete</h3>
+            <div id="coins-input-container" class="space-y-2">
+                <div class="flex items-center space-x-2">
+                    <label class="w-16 text-gray-600">0.01€</label>
+                    <input type="number" id="input-0.01" data-value="0.01" placeholder="0"
+                           class="input-field w-full p-2">
+                </div>
+                <div class="flex items-center space-x-2">
+                    <label class="w-16 text-gray-600">0.02€</label>
+                    <input type="number" id="input-0.02" data-value="0.02" placeholder="0"
+                           class="input-field w-full p-2">
+                </div>
+                <div class="flex items-center space-x-2">
+                    <label class="w-16 text-gray-600">0.05€</label>
+                    <input type="number" id="input-0.05" data-value="0.05" placeholder="0"
+                           class="input-field w-full p-2">
+                </div>
+                <div class="flex items-center space-x-2">
+                    <label class="w-16 text-gray-600">0.10€</label>
+                    <input type="number" id="input-0.1" data-value="0.1" placeholder="0"
+                           class="input-field w-full p-2">
+                </div>
+                <div class="flex items-center space-x-2">
+                    <label class="w-16 text-gray-600">0.20€</label>
+                    <input type="number" id="input-0.2" data-value="0.2" placeholder="0"
+                           class="input-field w-full p-2">
+                </div>
+                <div class="flex items-center space-x-2">
+                    <label class="w-16 text-gray-600">0.50€</label>
+                    <input type="number" id="input-0.5" data-value="0.5" placeholder="0"
+                           class="input-field w-full p-2">
+                </div>
+                <div class="flex items-center space-x-2">
+                    <label class="w-16 text-gray-600">1€</label>
+                    <input type="number" id="input-1" data-value="1" placeholder="0"
+                           class="input-field w-full p-2">
+                </div>
+                <div class="flex items-center space-x-2">
+                    <label class="w-16 text-gray-600">2€</label>
+                    <input type="number" id="input-2" data-value="2" placeholder="0"
+                           class="input-field w-full p-2">
+                </div>
+            </div>
+        </div>
+
+        <!-- Banconote -->
+        <div class="col-span-1">
+            <h3 class="font-bold text-gray-700 mb-2">Banconote</h3>
+            <div id="bills-input-container" class="space-y-2">
+                <div class="flex items-center space-x-2">
+                    <label class="w-16 text-gray-600">5€</label>
+                    <input type="number" id="input-5" data-value="5" placeholder="0"
+                           class="input-field w-full p-2">
+                </div>
+                <div class="flex items-center space-x-2">
+                    <label class="w-16 text-gray-600">10€</label>
+                    <input type="number" id="input-10" data-value="10" placeholder="0"
+                           class="input-field w-full p-2">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Pulsanti Azione -->
+<div class="bg-white p-6 rounded-3xl shadow-lg w-full max-w-lg mb-6 flex justify-center space-x-4">
+    <button id="calculate-button" disabled
+            class="px-6 py-3 bg-gray-400 text-white font-bold rounded-lg shadow-md hover:bg-blue-600 transition-colors duration-200">
+        Calcola Reintegro
+    </button>
+    <button id="clear-button" disabled
+            class="px-6 py-3 bg-gray-400 text-white font-bold rounded-lg shadow-md hover:bg-red-600 transition-colors duration-200">
+        Pulisci Campi
+    </button>
+</div>
+
+<!-- Risultati Reintegro -->
+<div class="bg-white p-6 rounded-3xl shadow-lg w-full max-w-lg mb-6">
+    <h2 class="text-2xl font-semibold text-gray-800 mb-4">Reintegri Necessari</h2>
+    <div id="results-container" class="text-gray-700 space-y-2">
+        <!-- I risultati verranno visualizzati qui -->
+    </div>
+</div>
+
+<!-- Riepilogo Casse Salvate -->
+<div class="bg-white p-6 rounded-3xl shadow-lg w-full max-w-lg mb-6">
+    <h2 class="text-2xl font-semibold text-gray-800 mb-4">Casse Salvate</h2>
+    <div id="saved-reintegrations-container" class="space-y-4">
+        <!-- Le casse salvate verranno visualizzate qui -->
+    </div>
+</div>
+
+<script>
+    // Configurazione e variabili globali
+    const proxyEndpoint = './.netlify/functions/gemini-proxy'; // Percorso per il proxy Netlify
+
+    // Dati standard per i reintegri (Quantità Target)
+    const targetQuantities = {
+        '0.01': 400, '0.02': 80, '0.05': 150, '0.1': 80, '0.2': 200, '0.5': 80, '1': 200, '2': 50,
+        '5': 30, '10': 20
+    };
+
+    // Contenuto dei rotolini di monete
+    const rollContents = {
+        '0.01': 50, '0.02': 50, '0.05': 50, '0.1': 40, '0.2': 40, '0.5': 40, '1': 25, '2': 25
+    };
+
+    const inputFields = ['input-0.01', 'input-0.02', 'input-0.05', 'input-0.1', 'input-0.2', 'input-0.5', 'input-1', 'input-2', 'input-5', 'input-10'];
+
+    // Funzioni di utilità
+    const getInputValue = (id) => document.getElementById(id).value;
+    const setInputValue = (id, value) => document.getElementById(id).value = value;
+    const getFormattedDate = () => new Date().toLocaleString('it-IT', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+
+    const isInputFilled = () => {
+        const cashierNumber = document.getElementById('cashier-number').value.trim();
+        if (cashierNumber === '') {
+            return false;
+        }
+
+        for (const id of inputFields) {
+            if (getInputValue(id) !== '') {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    const toggleButtons = () => {
+        const cashierNumber = document.getElementById('cashier-number').value.trim();
+        const saveButton = document.getElementById('save-button');
+        const calculateButton = document.getElementById('calculate-button');
+        const clearButton = document.getElementById('clear-button');
+
+        const saveEnabled = cashierNumber !== '' && isInputFilled();
+        saveButton.disabled = !saveEnabled;
+        saveButton.classList.toggle('bg-gray-400', !saveEnabled);
+        saveButton.classList.toggle('bg-blue-600', saveEnabled);
+        saveButton.classList.toggle('hover:bg-blue-700', saveEnabled);
+
+        const otherEnabled = cashierNumber !== '';
+        calculateButton.disabled = !otherEnabled;
+        calculateButton.classList.toggle('bg-gray-400', !otherEnabled);
+        calculateButton.classList.toggle('bg-blue-600', otherEnabled);
+        calculateButton.classList.toggle('hover:bg-blue-700', otherEnabled);
+
+        clearButton.disabled = !otherEnabled;
+        clearButton.classList.toggle('bg-gray-400', !otherEnabled);
+        clearButton.classList.toggle('bg-red-600', otherEnabled);
+        clearButton.classList.toggle('hover:bg-red-700', otherEnabled);
+    };
+
+    const processImage = async (base64Image, retryCount = 0) => {
+        const loadingStatus = document.getElementById('loading-status');
+        loadingStatus.classList.remove('hidden');
+        const apiStatus = document.getElementById('api-status');
+        apiStatus.textContent = "";
+
+        const prompt = `
+            Estrai le quantità di monete e banconote dalla seguente immagine di una schermata NCR. Ignora i valori totali e le colonne di sinistra e di destra. Concentrati solo sulla colonna centrale.
+            Presta particolare attenzione al layout a griglia. Le quantità di monete sono nella parte superiore, ordinate per valore. Le quantità di banconote sono nelle ultime due caselle in basso a destra.
+            Ignora le etichette come "Tutti" e considera solo i valori numerici associati a ciascun taglio.
+            Crea un oggetto JSON con i seguenti campi, tutti di tipo numero:
+            {
+                "10": [quantità banconote 10€],
+                "5": [quantità banconote 5€],
+                "2": [quantità monete 2€],
+                "1": [quantità monete 1€],
+                "0.5": [quantità monete 0.50€],
+                "0.2": [quantità monete 0.20€],
+                "0.1": [quantità monete 0.10€],
+                "0.05": [quantità monete 0.05€],
+                "0.02": [quantità monete 0.02€],
+                "0.01": [quantità monete 0.01€]
+            }
+        `;
+
+        const payload = {
+            image: base64Image,
+            prompt: prompt
+        };
+
+        try {
+            const response = await fetch(proxyEndpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                if (response.status === 429 && retryCount < 3) {
+                    const retryAfter = response.headers.get('Retry-After');
+                    const delay = (retryAfter ? parseInt(retryAfter) : Math.pow(2, retryCount)) * 1000;
+                    apiStatus.textContent = `Hai superato il limite di utilizzo. Riprovo in ${delay / 1000} secondi.`;
+                    await new Promise(res => setTimeout(res, delay));
+                    return processImage(base64Image, retryCount + 1);
+                }
+                throw new Error(`Errore HTTP! Stato: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            if (data.error) {
+                throw new Error(data.error);
+            }
+
+            inputFields.forEach(id => {
+                const key = document.getElementById(id).dataset.value;
+                const value = data[key];
+                
+                document.getElementById(id).classList.remove('border-green-500', 'border-red-500', 'border-yellow-500');
+                if (value !== undefined) {
+                    setInputValue(id, value);
+                    if (value === 0) {
+                        document.getElementById(id).classList.add('border-yellow-500');
+                    } else {
+                        document.getElementById(id).classList.add('border-green-500');
+                    }
+                }
+            });
+
+        } catch (error) {
+            console.error('Errore durante l\'analisi dell\'immagine:', error);
+            const errorMessage = document.createElement('p');
+            errorMessage.textContent = 'Errore nell\'analisi. Assicurati che l\'immagine sia chiara e riprova.';
+            errorMessage.classList.add('text-red-500', 'text-sm', 'mt-2', 'text-center');
+            apiStatus.parentNode.insertBefore(errorMessage, apiStatus.nextSibling);
+
+            inputFields.forEach(id => {
+                document.getElementById(id).classList.remove('border-green-500', 'border-yellow-500');
+                document.getElementById(id).classList.add('border-red-500');
+            });
+
+        } finally {
+            loadingStatus.classList.add('hidden');
+        }
+    };
+
+    // Funzione principale per il calcolo
+    const calculateReintegration = () => {
+        const resultsContainer = document.getElementById('results-container');
+        resultsContainer.innerHTML = '';
+        const results = {};
+
+        // Calcola i reintegri per ogni taglio
+        inputFields.forEach(id => {
+            const value = parseFloat(getInputValue(id)) || 0;
+            const denomination = document.getElementById(id).dataset.value;
+            const target = targetQuantities[denomination];
+            const needed = target - value;
+
+            if (needed > 0) {
+                if (rollContents[denomination]) {
+                    // È una moneta
+                    const rollsNeeded = Math.ceil(needed / rollContents[denomination]);
+                    results[denomination] = {
+                        needed,
+                        rolls: rollsNeeded
+                    };
+                } else {
+                    // È una banconota
+                    results[denomination] = {
+                        needed
+                    };
+                }
+            }
+        });
+
+        // Visualizza i risultati
+        if (Object.keys(results).length === 0) {
+            resultsContainer.innerHTML = '<p class="text-gray-500">Nessun reintegro necessario.</p>';
+        } else {
+            for (const key in results) {
+                const item = results[key];
+                const type = rollContents[key] ? 'rotolini' : 'banconote';
+                const quantity = rollContents[key] ? item.rolls : item.needed;
+                const p = document.createElement('p');
+                p.textContent = `${quantity} ${type} da ${key}€ necessari.`;
+                resultsContainer.appendChild(p);
+            }
+        }
+    };
+
+    const saveReintegration = () => {
+        const cashierNumber = getInputValue('cashier-number');
+        if (!cashierNumber) return;
+
+        const date = getFormattedDate();
+        const savedData = {
+            cashier: cashierNumber,
+            date,
+            details: {}
+        };
+
+        let isReintegrationNeeded = false;
+        inputFields.forEach(id => {
+            const value = parseFloat(getInputValue(id)) || 0;
+            const denomination = document.getElementById(id).dataset.value;
+            const target = targetQuantities[denomination];
+            const needed = target - value;
+            savedData.details[denomination] = { current: value, needed: needed > 0 ? needed : 0 };
+            if (needed > 0) {
+                isReintegrationNeeded = true;
+            }
+        });
+
+        const savedContainer = document.getElementById('saved-reintegrations-container');
+        const savedItem = document.createElement('div');
+        savedItem.classList.add('bg-gray-50', 'p-4', 'rounded-lg', 'shadow-sm', 'cursor-pointer', 'hover:bg-gray-100', 'transition-colors', 'duration-200');
+        
+        const summary = document.createElement('div');
+        summary.classList.add('flex', 'justify-between', 'items-center');
+        summary.innerHTML = `
+            <span class="font-bold text-gray-800">Cassa #${cashierNumber}</span>
+            <span class="text-sm text-gray-500">${date}</span>
+        `;
+        savedItem.appendChild(summary);
+
+        const detailsContainer = document.createElement('div');
+        detailsContainer.classList.add('details-container', 'hidden', 'mt-2', 'pl-4', 'border-l-2', 'border-gray-200');
+
+        for (const key in savedData.details) {
+            const item = savedData.details[key];
+            const detailP = document.createElement('p');
+            const totalNeeded = rollContents[key] ? Math.ceil(item.needed / rollContents[key]) : item.needed;
+            detailP.textContent = `Taglio ${key}€: Reintegro necessario: ${totalNeeded} (${item.needed}€)`;
+            detailsContainer.appendChild(detailP);
+        }
+
+        savedItem.appendChild(detailsContainer);
+
+        savedItem.addEventListener('click', () => {
+            detailsContainer.classList.toggle('hidden');
+        });
+
+        savedContainer.prepend(savedItem);
+        
+        if (isReintegrationNeeded) {
+          savedItem.classList.add('border-l-4', 'border-red-500');
+        } else {
+          savedItem.classList.add('border-l-4', 'border-green-500');
+        }
+    };
+
+    const clearFields = () => {
+        inputFields.forEach(id => {
+            setInputValue(id, '');
+            document.getElementById(id).classList.remove('border-green-500', 'border-red-500', 'border-yellow-500');
+        });
+        document.getElementById('results-container').innerHTML = '';
+        document.getElementById('cashier-number').value = '';
+        toggleButtons();
+    };
+
+    const handleFile = (file) => {
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const maxWidth = 800;
+                const scaleFactor = maxWidth / img.width;
+                canvas.width = maxWidth;
+                canvas.height = img.height * scaleFactor;
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                const base64Image = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
+                processImage(base64Image);
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    };
+
+    // Event Listeners
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('calculate-button').addEventListener('click', calculateReintegration);
+        document.getElementById('save-button').addEventListener('click', saveReintegration);
+        document.getElementById('clear-button').addEventListener('click', clearFields);
+
+        document.getElementById('cashier-number').addEventListener('input', toggleButtons);
+        inputFields.forEach(id => {
+            document.getElementById(id).addEventListener('input', toggleButtons);
+        });
+
+        document.getElementById('upload-photo-btn').addEventListener('click', () => {
+            const imageUpload = document.createElement('input');
+            imageUpload.type = 'file';
+            imageUpload.accept = 'image/*';
+            imageUpload.style.display = 'none';
+            document.body.appendChild(imageUpload);
+            imageUpload.addEventListener('change', (event) => {
+                handleFile(event.target.files[0]);
+                document.body.removeChild(imageUpload);
+            });
+            imageUpload.click();
+        });
+
+        document.getElementById('capture-photo-btn').addEventListener('click', () => {
+            const imageCapture = document.createElement('input');
+            imageCapture.type = 'file';
+            imageCapture.accept = 'image/*';
+            imageCapture.capture = 'camera';
+            imageCapture.style.display = 'none';
+            document.body.appendChild(imageCapture);
+            imageCapture.addEventListener('change', (event) => {
+                handleFile(event.target.files[0]);
+                document.body.removeChild(imageCapture);
+            });
+            imageCapture.click();
+        });
+    });
+</script>
 
